@@ -3,5 +3,6 @@ Vagrantfile
 venv
 ansible.cfg
 .vscode
+scripts
 
 
