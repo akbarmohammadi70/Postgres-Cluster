@@ -118,7 +118,3 @@ Now that your virtual environment is set up and dependencies are installed, you 
 ## License
 
 This setup is licensed under the MIT License. See the LICENSE file for more details.
-
-### Key Changes:
-- Added a **Virtual IP for Keepalived** section, indicating the VIP (`192.168.123.100`), which will be used for high availability and load balancing between the HAProxy nodes.
-- Included the **Virtual IP** in the context of Keepalived to ensure that the PostgreSQL database cluster is highly available for client connections.
