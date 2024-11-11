@@ -1,4 +1,3 @@
-```markdown
 # PostgreSQL Cluster with Patroni, etcd, HAProxy, Keepalived, and CQRS
 
 This setup consists of a high-availability PostgreSQL cluster using Patroni for automatic failover, etcd for consensus, and HAProxy for load balancing. The cluster is configured with **CQRS (Command Query Responsibility Segregation)**, where the **leader** database is used for write operations and the **standby** databases are used for read operations. The leader and standby databases are differentiated by their respective ports:
@@ -119,7 +118,6 @@ Now that your virtual environment is set up and dependencies are installed, you 
 ## License
 
 This setup is licensed under the MIT License. See the LICENSE file for more details.
-```
 
 ### Key Changes:
 - Added a **Virtual IP for Keepalived** section, indicating the VIP (`192.168.123.100`), which will be used for high availability and load balancing between the HAProxy nodes.
