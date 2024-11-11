@@ -1,0 +1,113 @@
+---
+- name: Create the directory for PostgreSQL key
+  file:
+    path: /usr/share/postgresql-common/pgdg
+    state: directory
+    mode: '0755'
+  when:
+  - ansible_distribution == 'Ubuntu'
+  - ansible_distribution_major_version == '22'
+
+- name: Import the repository signing key
+  get_url:
+    url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
+    dest: /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc
+    mode: '0644'
+  when:
+  - ansible_distribution == 'Ubuntu'
+  - ansible_distribution_major_version == '22'
+
+- name: Create the repository configuration file
+  copy:
+    content: "deb
+      [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc]
+      https://apt.postgresql.org/pub/repos/apt {{ ansible_lsb.codename }}-pgdg
+      main\n"
+    dest: /etc/apt/sources.list.d/pgdg.list
+    mode: '0644'
+  when:
+  - ansible_distribution == 'Ubuntu'
+  - ansible_distribution_major_version == '22'
+
+- name: Update APT package index
+  apt:
+    update_cache: yes
+  ignore_errors: true
+  when:
+  - ansible_distribution == 'Ubuntu'
+  - ansible_distribution_major_version == '22'
+
+- name: Install PostgreSQL and development packages
+  apt:
+    pkg:
+    - postgresql-17
+    - postgresql-server-dev-17
+    state: present
+  when:
+  - ansible_distribution == 'Ubuntu'
+  - ansible_distribution_major_version == '22'
+
+- name: Create symbolic links for PostgreSQL binaries
+  file:
+    src: "/usr/lib/postgresql/17/bin/{{ item }}"
+    dest: "/usr/sbin/{{ item }}"
+    state: link
+  loop: "{{ lookup('fileglob', '/usr/lib/postgresql/17/bin/*') }}"
+  when:
+  - ansible_distribution == 'Ubuntu'
+  - ansible_distribution_major_version == '22'
+
+- name: Configure PostgreSQL to listen on all IP addresses
+  lineinfile:
+    path: /etc/postgresql/17/main/postgresql.conf
+    regexp: '^#?listen_addresses'
+    line: "listen_addresses = '*'"
+  notify: Restart PostgreSQL
+
+- name: Configure local authentication
+  lineinfile:
+    path: /etc/postgresql/17/main/pg_hba.conf
+    line: "local   all             postgres                                md5"
+  notify: Restart PostgreSQL
+
+- name: Configure PostgreSQL client authentication
+  lineinfile:
+    path: /etc/postgresql/17/main/pg_hba.conf
+    line: "host    all             all             0.0.0.0/0               md5"
+  notify: Restart PostgreSQL
+
+- name: Configure PostgreSQL client authentication
+  lineinfile:
+    path: /etc/postgresql/17/main/pg_hba.conf
+    line: "host    replication     all             0.0.0.0/0               md5"
+  notify: Restart PostgreSQL
+
+- name: Ensure PostgreSQL admin user password is set
+  postgresql_user:
+    name: "{{ admin_user }}"
+    password: "{{ admin_password }}"
+    state: present
+    role_attr_flags: SUPERUSER,CREATEDB,CREATEROLE
+  become: true
+  become_user: postgres
+  become_flags: "-H"
+
+- name: Ensure PostgreSQL replicator user exists with superuser permission
+  postgresql_user:
+    name: "{{ replicator_user }}"
+    password: "{{ replicator_password }}"
+    state: present
+    role_attr_flags: SUPERUSER
+  become: true
+  become_user: postgres
+  become_flags: "-H"
+
+- name: Disable PostgreSQL service
+  service:
+    name: postgresql
+    enabled: no
+  notify: Stop PostgreSQL
+  when:
+  - ansible_distribution == 'Ubuntu'
+  - ansible_distribution_major_version == '22'
+...

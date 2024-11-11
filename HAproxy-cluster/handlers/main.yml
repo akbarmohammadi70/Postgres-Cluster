@@ -1,0 +1,19 @@
+---
+- name: Start irqbalance
+  service:
+    name: irqbalance
+    state: started
+    enabled: true
+
+- name: restart haproxy
+  service:
+    name: haproxy
+    state: restarted
+    enabled: true
+
+- name: restart keepalived
+  service:
+    name: keepalived
+    state: started
+    enabled: true
+...

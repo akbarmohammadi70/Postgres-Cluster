@@ -1,0 +1,25 @@
+---
+- name: Install postgres cluster
+  become: true
+  hosts:
+    - cluster
+  vars_files:
+    - ./postgres-cluster/vars/main.yml
+    - ./postgres-cluster/vars/postgres-vault.yml 
+  roles:
+    - postgres-cluster
+  tags:
+    - postgres
+
+- name: Install HAproxy with keepalived
+  become: true
+  hosts:
+    - lb
+  vars_files:
+    - ./HAproxy-cluster/vars/main.yml
+    - ./HAproxy-cluster/vars/haproxy-vault.yml
+  roles:
+    - HAproxy-cluster
+  tags:
+    - lb
+...

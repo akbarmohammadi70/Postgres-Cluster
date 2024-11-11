@@ -1,0 +1,115 @@
+scope: postgres
+namespace: /db/
+name: {{ node_name }}
+restapi:
+  listen: {{ node_ip }}:8008
+  connect_address: {{ node_ip }}:8008
+etcd:
+  hosts: {{ node_ip1 }}:2379,{{ node_ip2 }}:2379,{{ node_ip3 }}:2379
+bootstrap:
+  dcs:
+    # Time-to-live for the leader lock, in seconds.
+    ttl: 30
+    # Number of seconds to wait between checks on the cluster state.
+    loop_wait: 10
+    # Timeout for DCS and PostgreSQL operations, in seconds.
+    retry_timeout: 10
+    # Maximum allowed lag in bytes for a follower to be considered as a candidate for promotion.
+    maximum_lag_on_failover: 1048576
+    postgresql:
+      pg_bin: /usr/lib/postgresql/17/bin 
+      bin_dir: /usr/lib/postgresql/17/bin
+      # Enables the use of pg_rewind for faster failover recovery.
+      use_pg_rewind: true
+      # Uses replication slots, which ensures that the primary does not remove WAL segments needed by replicas.
+      use_slots: true
+      parameters:
+        # Enables hot standby mode and ensures that enough info is written to the WAL to support a robust HA setup.
+        wal_level: hot_standby
+        # Allows read-only queries on standby servers.
+        hot_standby: "on"
+        # Maximum number of concurrent connections.
+        max_connections: 100
+        # Maximum number of background worker processes.
+        max_worker_processes: 8           
+        # Minimum number of past log file segments to keep for standby servers.
+        wal_keep_segments: 8
+        # Maximum number of concurrent connections for streaming replication.
+        max_wal_senders: 10
+        # Maximum number of replication slots.
+        max_replication_slots: 10
+        # Maximum number of prepared transactions (0 disables the feature).
+        max_prepared_transactions: 0
+        # Maximum number of locks per transaction.
+        max_locks_per_transaction: 64
+        # Logs additional information in the WAL to support pg_rewind.
+        wal_log_hints: "on"
+        # Disables tracking of commit timestamps.
+        track_commit_timestamp: "off"
+        # Enables WAL archiving.
+        archive_mode: "on"
+        # Forces a switch to a new WAL file if a new file hasn't been started within 1800 seconds.
+        archive_timeout: 1800s
+        # Command to archive WAL files. This command creates a directory named 'wal_archive', checks if the file doesn't already exist, and then copies it
+        archive_command: mkdir -p ../wal_archive && test ! -f ../wal_archive/%f && cp %p ../wal_archive/%f
+      recovery_conf:
+        # Command used to retrieve archived WAL files during recovery. It copies files from the 'wal_archive' directory.
+        restore_command: cp ../wal_archive/%f %p
+  initdb:
+  # Sets the default authentication method
+  - auth: scram-sha-256
+  # Sets the default character encoding for the database to UTF-8, which supports a wide range of characters.
+  - encoding: UTF8
+  # Enables data checksums on this cluster, which helps detect corruption caused by hardware or I/O subsystem faults.
+  - data-checksums
+
+  # This section configures the pg_hba.conf file, which controls client authentication for PostgreSQL.
+  pg_hba:
+  - host replication {{ replicator_user }} 127.0.0.1/32 scram-sha-256
+  - host replication {{ replicator_user }} {{ node_ip1 }}/0 scram-sha-256
+  - host replication {{ replicator_user }} {{ node_ip2 }}/0 scram-sha-256
+  - host replication {{ replicator_user }} {{ node_ip3 }}/0 scram-sha-256
+  - host all all 0.0.0.0/0 scram-sha-256
+
+  # This section defines database users and their properties.
+  users:
+    admin:
+      password: {{ admin_password }}
+      options:
+        - createrole
+        - createdb
+
+postgresql:
+  # Specifies the IP address and port on which PostgreSQL should listen for connections.	
+  listen: {{ node_ip }}:5432
+  # The address and port other nodes should use to connect to this instance.
+  connect_address: {{ node_ip }}:5432
+  # The directory where PostgreSQL will store its data files.
+  data_dir: /var/lib/patroni/
+  # The location of the .pgpass file, which stores passwords for non-interactive connections.
+  pgpass: /tmp/pgpass
+
+  # This defines authentication details for different types of connections.
+  authentication:
+    replication:
+      username: {{ replicator_user }}
+      password: {{ replicator_password }}
+    superuser:
+      username: {{ admin_user }}
+      password: {{ admin_password }}
+
+  parameters:
+    # Sets the current directory as the location for Unix-domain sockets.
+    unix_socket_directories: '.'
+    password_encryption: 'scram-sha-256'
+
+# These are Patroni-specific tags that control various behaviors
+tags:
+    # Allows this node to be considered for failover.
+    nofailover: false
+    # Allows this node to be considered for load balancing.
+    noloadbalance: false
+    # This node will not be used as a preferred source when adding new nodes.
+    clonefrom: false
+    # Allows this node to be considered for synchronous replication.
+    nosync: false

@@ -1,0 +1,149 @@
+---
+- name: Update and upgrade apt packages
+  become: true
+  apt:
+    upgrade: yes
+    update_cache: yes
+    cache_valid_time: 86400
+  ignore_errors: true
+  when:
+  - ansible_distribution == 'Ubuntu'
+  - ansible_distribution_major_version == '22'
+
+- name: Install required system packages
+  apt:
+    pkg:
+    - apt-transport-https
+    - curl
+    - ca-certificates
+    - software-properties-common
+    - python3-pip
+    - python3-setuptools
+    - iptables-persistent
+    - python3-psycopg2
+    state: present
+  when:
+  - ansible_distribution == 'Ubuntu'
+  - ansible_distribution_major_version == '22'
+
+- name: Set iptables rules
+  iptables:
+    table: "{{ item.table }}"
+    chain: "{{ item.chain }}"
+    protocol: "{{ item.protocol }}"
+    destination_port: "{{ item.destination_port }}"
+    action: "{{ item.action }}"
+    jump: "{{ item.jump }}"
+  with_items:
+  - {
+      table: 'filter',
+      chain: 'INPUT',
+      protocol: 'tcp',
+      destination_port: '22',
+      action: 'insert',
+      jump: 'ACCEPT'
+    }
+  - {
+      table: 'filter',
+      chain: 'INPUT',
+      protocol: 'udp',
+      destination_port: '53',
+      action: 'insert',
+      jump: 'ACCEPT'
+    }
+  - {
+      table: 'filter',
+      chain: 'INPUT',
+      protocol: 'tcp',
+      destination_port: '5432',
+      action: 'insert',
+      jump: 'ACCEPT'
+    }
+  - {
+      table: 'filter',
+      chain: 'INPUT',
+      protocol: 'tcp',
+      destination_port: '2380',
+      action: 'insert',
+      jump: 'ACCEPT'
+    }
+  - {
+      table: 'filter',
+      chain: 'INPUT',
+      protocol: 'tcp',
+      destination_port: '2379',
+      action: 'insert',
+      jump: 'ACCEPT'
+    }
+  - {
+      table: 'filter',
+      chain: 'INPUT',
+      protocol: 'tcp',
+      destination_port: '8008',
+      action: 'insert',
+      jump: 'ACCEPT'
+    }
+
+- name: Allow established connections
+  iptables:
+    table: filter
+    chain: INPUT
+    ctstate: ESTABLISHED,RELATED
+    action: insert
+    jump: ACCEPT
+
+- name: Drop all other traffic
+  iptables:
+    table: filter
+    chain: INPUT
+    action: append
+    jump: DROP
+
+- name: Save iptables rules
+  shell: iptables-save > /etc/iptables/rules.v4
+  when:
+  - ansible_distribution == 'Ubuntu'
+  - ansible_distribution_major_version == '22'
+
+- name: Load kernel modules
+  modprobe:
+    name: '{{ item }}'
+    state: present
+  with_items:
+  - nf_conntrack
+  - overlay
+  when:
+  - ansible_distribution == 'Ubuntu'
+  - ansible_distribution_major_version == '22'
+
+- name: Ensure nf_conntrack and overlay are in /etc/modules
+  lineinfile:
+    path: /etc/modules
+    line: "{{ item }}"
+    state: present
+  with_items:
+  - "nf_conntrack"
+  - "overlay"
+  when:
+  - ansible_distribution == 'Ubuntu'
+  - ansible_distribution_major_version == '22'
+
+- name: Set modules with sysctl
+  sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    state: present
+    reload: yes
+  with_items:
+  - { key: "net.netfilter.nf_conntrack_max", value: 2048 }
+  - { key: "vm.swappiness", value: 10 }
+  - { key: "vm.dirty_ratio", value: 10 }
+  - { key: "vm.dirty_background_ratio", value: 5 }
+  when:
+  - ansible_distribution == 'Ubuntu'
+  - ansible_distribution_major_version == '22'
+
+- name: Set timezone to Asia/Tehran
+  timezone:
+    name: Asia/Tehran
+...

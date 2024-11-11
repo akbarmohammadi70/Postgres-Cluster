@@ -1,0 +1,17 @@
+---
+- name: Restart PostgreSQL
+  service:
+    name: postgresql
+    state: restarted
+
+- name: Restart etcd 
+  systemd:
+    name: etcd
+    state: restarted
+    enabled: true
+
+- name: Stop PostgreSQL
+  systemd:
+    name: postgresql
+    state: stopped
+...

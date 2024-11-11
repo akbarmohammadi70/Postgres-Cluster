@@ -1,0 +1,8 @@
+ETCD_NAME="{{ node_name }}"
+ETCD_LISTEN_PEER_URLS="http://{{ node_ip }}:2380"
+ETCD_LISTEN_CLIENT_URLS="http://localhost:2379,http://{{ node_ip }}:2379"
+ETCD_INITIAL_ADVERTISE_PEER_URLS="http://{{ node_ip }}:2380"
+ETCD_INITIAL_CLUSTER="etcd-1=http://{{ node_ip1 }}:2380,etcd-2=http://{{ node_ip2 }}:2380,etcd-3=http://{{ node_ip3 }}:2380"
+ETCD_ADVERTISE_CLIENT_URLS="http://{{ node_ip }}:2379"
+ETCD_INITIAL_CLUSTER_TOKEN="etcd-cluster"
+ETCD_INITIAL_CLUSTER_STATE="new"

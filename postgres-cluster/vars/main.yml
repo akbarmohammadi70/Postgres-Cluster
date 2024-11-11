@@ -1,0 +1,12 @@
+---
+# vars file for postgres-cluster
+node_name1: "node1"
+node_name2: "node2"
+node_name3: "node3"
+node_ip1: 192.168.123.10
+node_ip2: 192.168.123.11
+node_ip3: 192.168.123.12
+superuser_name: postgres
+admin_user: admin
+replicator_user: replicator
+username: postgres

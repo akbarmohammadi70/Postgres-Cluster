@@ -1,0 +1,58 @@
+---
+- name: Stop etcd service
+  systemd:
+    name: etcd
+    state: stopped
+  when:
+    - ansible_distribution == 'Ubuntu'
+    - ansible_distribution_major_version == '22'
+  ignore_errors: true
+
+- name: Install etcd
+  apt:
+    pkg:
+    - etcd-server 
+    - etcd-client 
+    - python3-etcd
+    state: present
+  when:
+    - ansible_distribution == 'Ubuntu'
+    - ansible_distribution_major_version == '22'
+    
+- name: Set etcd configuration for node1
+  template:
+    src: etcd.j2
+    dest: /etc/default/etcd
+  vars:
+    node_name: "etcd-1"
+    node_ip: "{{ node_ip1 }}"
+  delegate_to: node1
+  notify: Restart etcd
+
+- name: Set etcd configuration for node2
+  template:
+    src: etcd.j2
+    dest: /etc/default/etcd
+  vars:
+    node_name: "etcd-2"
+    node_ip: "{{ node_ip2 }}"
+  delegate_to: node2
+  notify: Restart etcd
+
+- name: Set etcd configuration for node3
+  template:
+    src: etcd.j2
+    dest: /etc/default/etcd
+  vars:
+    node_name: "etcd-3"
+    node_ip: "{{ node_ip3 }}"
+  delegate_to: node3
+  notify: Restart etcd
+
+- name: Remove all files in /var/lib/etcd
+  shell: |
+     rm -rf /var/lib/etcd/*
+  become: true
+  become_user: root
+  notify: Restart etcd
+...

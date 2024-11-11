@@ -1,0 +1,7 @@
+.vagrant
+Vagrantfile
+venv
+ansible.cfg
+.vscode
+
+

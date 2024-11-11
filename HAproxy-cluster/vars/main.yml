@@ -1,0 +1,17 @@
+---
+p_name_node1: node1
+p_name_node2: node2
+p_name_node3: node3
+
+p_node_ip1: 192.168.123.10
+p_node_ip2: 192.168.123.11
+p_node_ip3: 192.168.123.12
+
+node_name1: "node4"
+node_name2: "node5"
+node_ip1: 192.168.123.13
+node_ip2: 192.168.123.14
+vip_ip: 192.168.123.100
+master: 101
+backup: 100
+...

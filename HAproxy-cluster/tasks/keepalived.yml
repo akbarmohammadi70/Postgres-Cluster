@@ -1,0 +1,38 @@
+---
+- name: Install Keepalived 
+  apt:
+    pkg:
+      - keepalived
+    state: present
+  when:
+    - ansible_distribution == 'Ubuntu'
+    - ansible_distribution_major_version == '22'
+
+- name: Set Keepalived config 1
+  template:
+    src: keepalived.conf.j2
+    dest: /etc/keepalived/keepalived.conf
+  vars:
+    node_name: "{{ node_name1 }}"
+    other_node: "{{ node_name2 }}"
+    number: "{{ master }}"
+  delegate_to: "{{ node_name1 }}"
+  when:
+    - ansible_distribution == 'Ubuntu'
+    - ansible_distribution_major_version == '22'
+  notify: restart keepalived
+
+- name: Set Keepalived config 2
+  template:
+    src: keepalived.conf.j2
+    dest: /etc/keepalived/keepalived.conf
+  vars:
+    node_name: "{{ node_name2 }}"
+    other_node: "{{ node_name1 }}"
+    number: "{{ backup }}"
+  delegate_to: "{{ node_name2 }}"
+  when:
+    - ansible_distribution == 'Ubuntu'
+    - ansible_distribution_major_version == '22'
+  notify: restart keepalived
+...

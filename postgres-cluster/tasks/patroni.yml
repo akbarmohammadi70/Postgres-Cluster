@@ -1,0 +1,51 @@
+---
+- name: Install patroni
+  apt:
+    pkg:
+    - patroni
+    state: present
+  when:
+    - ansible_distribution == 'Ubuntu'
+    - ansible_distribution_major_version == '22'
+
+- name: Set patroni configuration for node1
+  template:
+    src: config.yml.j2
+    dest: /etc/patroni/config.yml
+  vars:
+    node_name: "{{ node_name1 }}"
+    node_ip: "{{ node_ip1 }}"
+  delegate_to: node1
+
+- name: Set patroni configuration for node2
+  template:
+    src: config.yml.j2
+    dest: /etc/patroni/config.yml
+  vars:
+    node_name: "{{ node_name2 }}"
+    node_ip: "{{ node_ip2 }}"
+  delegate_to: node2
+
+- name: Set patroni configuration for node3
+  template:
+    src: config.yml.j2
+    dest: /etc/patroni/config.yml
+  vars:
+    node_name: "{{ node_name3 }}"
+    node_ip: "{{ node_ip3 }}"
+  delegate_to: node3
+
+- name: Create patroni directory
+  file:
+    path: /var/lib/patroni
+    state: directory
+    mode: '0700'
+    owner: postgres
+    group: postgres
+
+- name: Start patroni service
+  systemd:
+    name: patroni
+    state: started
+    enabled: true
+...

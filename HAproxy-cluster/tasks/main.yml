@@ -1,0 +1,11 @@
+---
+- name: Install requirments
+  include_tasks: requirments.yml
+  when: ansible_os_family == "Debian"
+- name: Install HAproxy
+  include_tasks: haproxy.yml
+  when: ansible_os_family == "Debian"
+- name: Install keepalived
+  include_tasks: keepalived.yml
+  when: ansible_os_family == "Debian"
+...

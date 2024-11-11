@@ -1,0 +1,14 @@
+---
+- name: Install requirments
+  include_tasks: requirments.yml
+  when: ansible_os_family == "Debian"
+- name: Install postgres 
+  include_tasks: postgresql.yml
+  when: ansible_os_family == "Debian"
+- name: Install etcd 
+  include_tasks: etcd.yml
+  when: ansible_os_family == "Debian"
+- name: Install patroni
+  include_tasks: patroni.yml
+  when: ansible_os_family == "Debian"
+...

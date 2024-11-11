@@ -1,0 +1,64 @@
+# Global configuration settings
+global
+    # Maximum connections globally
+    maxconn 100000
+    # Logging settings
+    log 127.0.0.1 local2
+
+# Default settings
+defaults
+    # Global log configuration
+    log global
+    # Set mode to TCP
+    mode tcp
+    # Number of retries
+    retries 2
+    # Client timeout
+    timeout client 30m
+    # Connect timeout
+    timeout connect 4s
+    # Server timeout
+    timeout server 30m
+    # Check timeout
+    timeout check 5s
+
+# Stats configuration
+listen stats
+    # Set mode to HTTP
+    mode http
+    # Bind to port 8080
+    bind *:8080
+    # Enable stats
+    stats enable
+    # Stats URI
+    stats uri /
+
+# PostgreSQL configuration
+listen production
+    # Bind to port 5000
+    bind *:5000
+    # Enable HTTP check
+    option httpchk OPTIONS /master
+    # Expect status 200
+    http-check expect status 200
+    # Server settings
+    default-server inter 3s fall 3 rise 2 on-marked-down shutdown-sessions
+    # Define PostgreSQL servers
+    server {{ p_name_node1 }} {{ p_node_ip1 }}:5432 maxconn 100 check port 8008
+    server {{ p_name_node2 }} {{ p_node_ip2 }}:5432 maxconn 100 check port 8008
+    server {{ p_name_node3 }} {{ p_node_ip3 }}:5432 maxconn 100 check port 8008
+
+listen standby
+    # Bind to port 5001
+    bind *:5001
+    # Enable HTTP check
+    option httpchk OPTIONS /replica
+    # Expect status 200
+    http-check expect status 200
+    # Server settings
+    default-server inter 3s fall 3 rise 2 on-marked-down shutdown-sessions
+    # Define PostgreSQL servers
+    server {{ p_name_node1 }} {{ p_node_ip1 }}:5432 maxconn 100 check port 8008
+    server {{ p_name_node2 }} {{ p_node_ip2 }}:5432 maxconn 100 check port 8008
+    server {{ p_name_node3 }} {{ p_node_ip3 }}:5432 maxconn 100 check port 8008
+
