@@ -1,0 +1,8 @@
+[cluster]
+node1 ansible_host=192.168.123.10 ansible_user=vagrant ansible_ssh_extra_args='-o StrictHostKeyChecking=no'
+node2 ansible_host=192.168.123.11 ansible_user=vagrant ansible_ssh_extra_args='-o StrictHostKeyChecking=no'
+node3 ansible_host=192.168.123.12 ansible_user=vagrant ansible_ssh_extra_args='-o StrictHostKeyChecking=no'
+
+[lb]
+node4 ansible_host=192.168.123.13 ansible_user=vagrant ansible_ssh_extra_args='-o StrictHostKeyChecking=no'
+node5 ansible_host=192.168.123.14 ansible_user=vagrant ansible_ssh_extra_args='-o StrictHostKeyChecking=no'
