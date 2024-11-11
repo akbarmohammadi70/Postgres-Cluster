@@ -1,7 +1,12 @@
 ```markdown
-# PostgreSQL Cluster with Patroni, etcd, HAProxy, and Keepalived
+# PostgreSQL Cluster with Patroni, etcd, HAProxy, Keepalived, and CQRS
 
-This setup consists of a high-availability PostgreSQL cluster using Patroni for automatic failover, etcd for consensus, and HAProxy for load balancing. The cluster consists of the following nodes:
+This setup consists of a high-availability PostgreSQL cluster using Patroni for automatic failover, etcd for consensus, and HAProxy for load balancing. The cluster is configured with **CQRS (Command Query Responsibility Segregation)**, where the **leader** database is used for write operations and the **standby** databases are used for read operations. The leader and standby databases are differentiated by their respective ports:
+
+- **Leader Database** (Port: 5000) - Used for write (command) operations.
+- **Standby Database** (Port: 5001) - Used for read (query) operations.
+
+The cluster consists of the following nodes:
 
 - **3 PostgreSQL nodes** with Patroni and etcd for managing the database cluster.
 - **2 HAProxy nodes** with Keepalived for providing load balancing and high availability for client connections.
@@ -10,18 +15,24 @@ This setup consists of a high-availability PostgreSQL cluster using Patroni for 
 
 ### PostgreSQL Cluster Nodes
 
-| Node Name | Role        | IP Address       |
-|-----------|-------------|------------------|
-| node1     | PostgreSQL  | 192.168.123.10   |
-| node2     | PostgreSQL  | 192.168.123.11   |
-| node3     | PostgreSQL  | 192.168.123.12   |
+| Node Name | Role        | IP Address       | OS Version     | PostgreSQL Port |
+|-----------|-------------|------------------|----------------|-----------------|
+| node1     | PostgreSQL (Leader)  | 192.168.123.10   | Ubuntu 22.04   | 5000            |
+| node2     | PostgreSQL (Standby) | 192.168.123.11   | Ubuntu 22.04   | 5001            |
+| node3     | PostgreSQL (Standby) | 192.168.123.12   | Ubuntu 22.04   | 5001            |
 
 ### HAProxy & Keepalived Nodes
 
-| Node Name | Role         | IP Address       |
-|-----------|--------------|------------------|
-| node4     | HAProxy & Keepalived | 192.168.123.13   |
-| node5     | HAProxy & Keepalived | 192.168.123.14   |
+| Node Name | Role         | IP Address       | OS Version     |
+|-----------|--------------|------------------|----------------|
+| node4     | HAProxy & Keepalived | 192.168.123.13   | Ubuntu 22.04   |
+| node5     | HAProxy & Keepalived | 192.168.123.14   | Ubuntu 22.04   |
+
+### Virtual IP for Keepalived
+
+- **Keepalived Virtual IP (VIP)**: `192.168.123.100`
+
+  The **Virtual IP (VIP)** provided by Keepalived will be used for client connections to the PostgreSQL cluster, ensuring high availability and automatic failover.
 
 ## Ansible Roles
 
@@ -33,8 +44,8 @@ Two Ansible roles have been created to deploy and configure the components of th
 
 2. **HAProxy and Keepalived**:
    - Installs and configures HAProxy and Keepalived on the HAProxy nodes (node4, node5).
-   - Configures HAProxy to load balance PostgreSQL traffic between the three database nodes.
-   - Uses Keepalived to ensure high availability for the HAProxy instances.
+   - Configures HAProxy to load balance PostgreSQL traffic between the three database nodes. The HAProxy configuration ensures that write traffic is directed to the leader (port 5000) and read traffic is directed to the standby nodes (port 5001).
+   - Uses Keepalived to provide the **Virtual IP** (`192.168.123.100`), ensuring that the HAProxy nodes remain available even if one of them fails.
 
 ## Setup Steps
 
@@ -90,9 +101,12 @@ Now that your virtual environment is set up and dependencies are installed, you 
 
 1. **PostgreSQL Cluster**:
    - Check the Patroni status to ensure all PostgreSQL nodes are synchronized and healthy.
+   - Verify that the leader database is on port 5000 and the standby databases are on port 5001.
 
 2. **HAProxy Load Balancer**:
-   - Test the HAProxy setup by connecting to the provided virtual IP or DNS name and verify traffic distribution across the database nodes.
+   - Test the HAProxy setup by connecting to the provided **Virtual IP (VIP)** (`192.168.123.100`) and verify traffic distribution:
+     - Write requests should be directed to port 5000 (Leader).
+     - Read requests should be directed to port 5001 (Standby).
 
 ## Requirements
 
@@ -108,8 +122,5 @@ This setup is licensed under the MIT License. See the LICENSE file for more deta
 ```
 
 ### Key Changes:
-- **Python Virtual Environment Setup**: Added instructions for creating and activating a Python virtual environment (`venv`).
-- **Installation of Requirements**: Added a step to install the necessary dependencies using `pip install -r requirements.txt`.
-- **Step-by-step Ansible Playbook Execution**: The playbooks are run after setting up the virtual environment and installing the dependencies.
-
-Make sure you have a `requirements.txt` file containing the necessary Python packages like `ansible`, `paramiko`, etc., for the setup to work properly.
+- Added a **Virtual IP for Keepalived** section, indicating the VIP (`192.168.123.100`), which will be used for high availability and load balancing between the HAProxy nodes.
+- Included the **Virtual IP** in the context of Keepalived to ensure that the PostgreSQL database cluster is highly available for client connections.
