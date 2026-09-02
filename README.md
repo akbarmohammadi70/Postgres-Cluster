@@ -86,7 +86,7 @@ Ensure the IP addresses and hostnames for the PostgreSQL and HAProxy nodes match
 
 Now that your virtual environment is set up and dependencies are installed, you can run the Ansible playbooks to configure the cluster.
 
-1. **Run the playbook to configure the PostgreSQL cluster**:
+1. **Run the playbook to configure the PostgreSQL cluster (Vault password: 'qazwsx')**:
    ```bash
    ansible-playbook -i inventory.ini install.yml --ask-vault-pass
    ```
