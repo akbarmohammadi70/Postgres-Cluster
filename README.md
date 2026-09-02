@@ -16,20 +16,20 @@ The cluster consists of the following nodes:
 
 | Node Name | Role        | IP Address       | OS Version     | PostgreSQL Port |
 |-----------|-------------|------------------|----------------|-----------------|
-| node1     | PostgreSQL (Leader)  | 192.168.123.10   | Ubuntu 22.04   | 5000            |
-| node2     | PostgreSQL (Standby) | 192.168.123.11   | Ubuntu 22.04   | 5001            |
-| node3     | PostgreSQL (Standby) | 192.168.123.12   | Ubuntu 22.04   | 5001            |
+| node1     | PostgreSQL (Leader)  | 192.168.x.x   | Ubuntu 22.04   | 5000            |
+| node2     | PostgreSQL (Standby) | 192.168.x.x   | Ubuntu 22.04   | 5001            |
+| node3     | PostgreSQL (Standby) | 192.168.x.x   | Ubuntu 22.04   | 5001            |
 
 ### HAProxy & Keepalived Nodes
 
 | Node Name | Role         | IP Address       | OS Version     |
 |-----------|--------------|------------------|----------------|
-| node4     | HAProxy & Keepalived | 192.168.123.13   | Ubuntu 22.04   |
-| node5     | HAProxy & Keepalived | 192.168.123.14   | Ubuntu 22.04   |
+| node4     | HAProxy & Keepalived | 192.168.x.x   | Ubuntu 22.04   |
+| node5     | HAProxy & Keepalived | 192.168.x.x   | Ubuntu 22.04   |
 
 ### Virtual IP for Keepalived
 
-- **Keepalived Virtual IP (VIP)**: `192.168.123.100`
+- **Keepalived Virtual IP (VIP)**: `192.168.x.x`
 
   The **Virtual IP (VIP)** provided by Keepalived will be used for client connections to the PostgreSQL cluster, ensuring high availability and automatic failover.
 
@@ -44,7 +44,7 @@ Two Ansible roles have been created to deploy and configure the components of th
 2. **HAProxy and Keepalived**:
    - Installs and configures HAProxy and Keepalived on the HAProxy nodes (node4, node5).
    - Configures HAProxy to load balance PostgreSQL traffic between the three database nodes. The HAProxy configuration ensures that write traffic is directed to the leader (port 5000) and read traffic is directed to the standby nodes (port 5001).
-   - Uses Keepalived to provide the **Virtual IP** (`192.168.123.100`), ensuring that the HAProxy nodes remain available even if one of them fails.
+   - Uses Keepalived to provide the **Virtual IP** (`192.168.x.x`), ensuring that the HAProxy nodes remain available even if one of them fails.
 
 ## Setup Steps
 
@@ -80,7 +80,7 @@ Once the virtual environment is active, you need to install the required depende
 
 ### Step 3: Modify Inventory File
 
-Ensure the IP addresses and hostnames for the PostgreSQL and HAProxy nodes match your setup. Edit the `inventory` file as needed.
+Ensure the IP addresses and hostnames for the PostgreSQL and HAProxy nodes match your setup. Edit the `inventory` and also vars directory files per role as needed.
 
 ### Step 4: Run the Ansible Playbooks
 
@@ -88,12 +88,7 @@ Now that your virtual environment is set up and dependencies are installed, you 
 
 1. **Run the playbook to configure the PostgreSQL cluster**:
    ```bash
-   ansible-playbook -i inventory playbook-patroni-etcd.yml
-   ```
-
-2. **Run the playbook to configure HAProxy and Keepalived**:
-   ```bash
-   ansible-playbook -i inventory playbook-haproxy-keepalived.yml
+   ansible-playbook -i inventory.ini install.yml --ask-vault-pass
    ```
 
 ### Step 5: Verify the Setup
@@ -103,7 +98,7 @@ Now that your virtual environment is set up and dependencies are installed, you 
    - Verify that the leader database is on port 5000 and the standby databases are on port 5001.
 
 2. **HAProxy Load Balancer**:
-   - Test the HAProxy setup by connecting to the provided **Virtual IP (VIP)** (`192.168.123.100`) and verify traffic distribution:
+   - Test the HAProxy setup by connecting to the provided **Virtual IP (VIP)** (`192.168.x.x`) and verify traffic distribution:
      - Write requests should be directed to port 5000 (Leader).
      - Read requests should be directed to port 5001 (Standby).
 

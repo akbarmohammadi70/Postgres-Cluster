@@ -3,8 +3,8 @@
 node_name1: "node1"
 node_name2: "node2"
 node_name3: "node3"
-node_ip1: 192.168.1.119
-node_ip2: 192.168.1.120
-node_ip3: 192.168.1.121
+node_ip1: 192.168.1.103
+node_ip2: 192.168.1.104
+node_ip3: 192.168.1.105
 admin_user: admin
 replicator_user: replicator
