@@ -16,6 +16,7 @@
       - python3-setuptools 
       - python3-psycopg2 
       - iptables-persistent
+      - irqbalance
     state: present
 
 - name: Set iptables rules
@@ -93,7 +94,18 @@
 
 - name: Save iptables rules
   shell: iptables-save > /etc/iptables/rules.v4
-
+# ============================================================
+# irqbalance
+# ============================================================
+- name: Enable and start irqbalance
+  become: true
+  systemd:
+    name: irqbalance
+    state: started
+    enabled: true
+# ============================================================
+# Kernel module
+# ============================================================
 - name: Load nf_conntrack kernel module
   become: true
   community.general.modprobe:
@@ -108,8 +120,10 @@
     line: 'nf_conntrack'
     state: present
     create: true
-
-- name: Configure kernel parameters for PostgreSQL and Patroni
+# ============================================================
+# Kernel / Network tuning
+# ============================================================
+- name: Configure kernel parameters
   become: true
   ansible.posix.sysctl:
     name: "{{ item.key }}"
@@ -121,7 +135,7 @@
     # --------------------------------------------------------
     # Memory
     # --------------------------------------------------------
-    - { key: "vm.swappiness", value: "1" }
+    - { key: "vm.swappiness", value: "1" }    
     - { key: "vm.dirty_background_ratio", value: "5" }
     - { key: "vm.dirty_ratio", value: "10" }
     # --------------------------------------------------------
@@ -129,9 +143,11 @@
     # --------------------------------------------------------
     - { key: "net.core.somaxconn", value: "4096" }
     - { key: "net.core.netdev_max_backlog", value: "4096" }
-    - { key: "net.ipv4.tcp_max_syn_backlog", value: "4096" }
+    - { key: "net.ipv4.tcp_max_syn_backlog", value: "8192" }
     - { key: "net.ipv4.ip_local_port_range", value: "10240 65535" }
+    # --------------------------------------------------------
     # TCP keepalive
+    # --------------------------------------------------------
     - { key: "net.ipv4.tcp_keepalive_time", value: "600" }
     - { key: "net.ipv4.tcp_keepalive_intvl", value: "60" }
     - { key: "net.ipv4.tcp_keepalive_probes", value: "10" }
@@ -143,55 +159,38 @@
     # File handles
     # --------------------------------------------------------
     - { key: "fs.file-max", value: "2097152" }
-  when:
-  - ansible_distribution == 'Ubuntu'
-  - ansible_distribution_major_version == '22'
+    - { key: "fs.nr_open", value: "2097152" }
 # ============================================================
 # User / PAM file descriptor limits
 # ============================================================
-- name: Configure global soft nofile limit
-  become: true
-  ansible.builtin.lineinfile:
-    path: /etc/security/limits.conf
-    regexp: '^\*\s+soft\s+nofile\s+'
-    line: '* soft nofile 2097152'
-    create: true
-    state: present
 
-- name: Configure global hard nofile limit
+- name: Configure nofile limits
   become: true
-  ansible.builtin.lineinfile:
-    path: /etc/security/limits.conf
-    regexp: '^\*\s+hard\s+nofile\s+'
-    line: '* hard nofile 2097152'
-    create: true
-    state: present
+  ansible.builtin.copy:
+    dest: /etc/security/limits.d/99-nofile.conf
+    owner: root
+    group: root
+    mode: '0644'
+    content: |
+      * soft nofile 2097152
+      * hard nofile 2097152
+      root soft nofile 2097152
+      root hard nofile 2097152
 
-- name: Configure root soft nofile limit
-  become: true
-  ansible.builtin.lineinfile:
-    path: /etc/security/limits.conf
-    regexp: '^root\s+soft\s+nofile\s+'
-    line: 'root soft nofile 2097152'
-    create: true
-    state: present
-
-- name: Configure root hard nofile limit
-  become: true
-  ansible.builtin.lineinfile:
-    path: /etc/security/limits.conf
-    regexp: '^root\s+hard\s+nofile\s+'
-    line: 'root hard nofile 2097152'
-    create: true
-    state: present
-
-- name: Ensure pam_limits is enabled
+- name: Ensure pam_limits is enabled for common-session
   become: true
   ansible.builtin.lineinfile:
     path: /etc/pam.d/common-session
     regexp: '^session\s+required\s+pam_limits\.so'
     line: 'session required pam_limits.so'
-    create: true
+    state: present
+
+- name: Ensure pam_limits is enabled for common-session-noninteractive
+  become: true
+  ansible.builtin.lineinfile:
+    path: /etc/pam.d/common-session-noninteractive
+    regexp: '^session\s+required\s+pam_limits\.so'
+    line: 'session required pam_limits.so'
     state: present
 # ============================================================
 # systemd default resource limits
@@ -204,6 +203,7 @@
     line: 'DefaultLimitNOFILE=2097152'
     create: true
     state: present
+  register: systemd_nofile
 
 - name: Configure systemd default NPROC limit
   become: true
@@ -213,6 +213,14 @@
     line: 'DefaultLimitNPROC=65536'
     create: true
     state: present
+  register: systemd_nproc
+
+- name: Re-execute systemd when system.conf changed
+  become: true
+  ansible.builtin.command:
+    cmd: systemctl daemon-reexec
+  when:
+    - systemd_nofile.changed or systemd_nproc.changed
 
 - name: Set timezone to Asia/Tehran
   timezone:
