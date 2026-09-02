@@ -4,35 +4,41 @@
     pkg:
       - keepalived
     state: present
+
+- name: Find interface with HA IP
+  ansible.builtin.set_fact:
+    keepalived_interface: "{{ item }}"
+  loop: "{{ ansible_interfaces }}"
   when:
-    - ansible_distribution == 'Ubuntu'
-    - ansible_distribution_major_version == '22'
+    - item != "lo"
+    - ansible_facts[item].ipv4 is defined
+    - ansible_facts[item].ipv4.address == ansible_host
 
 - name: Set Keepalived config 1
   template:
-    src: keepalived.conf.j2
+    src: keepalived.conf.node1.j2
     dest: /etc/keepalived/keepalived.conf
   vars:
     node_name: "{{ node_name1 }}"
     other_node: "{{ node_name2 }}"
     number: "{{ master }}"
   delegate_to: "{{ node_name1 }}"
-  when:
-    - ansible_distribution == 'Ubuntu'
-    - ansible_distribution_major_version == '22'
   notify: restart keepalived
 
 - name: Set Keepalived config 2
   template:
-    src: keepalived.conf.j2
+    src: keepalived.conf.node2.j2
     dest: /etc/keepalived/keepalived.conf
   vars:
     node_name: "{{ node_name2 }}"
     other_node: "{{ node_name1 }}"
     number: "{{ backup }}"
   delegate_to: "{{ node_name2 }}"
-  when:
-    - ansible_distribution == 'Ubuntu'
-    - ansible_distribution_major_version == '22'
   notify: restart keepalived
+
+- name: start Keeplaived
+  service:
+    name: keepalived
+    state: started
+    enabled: true
 ...

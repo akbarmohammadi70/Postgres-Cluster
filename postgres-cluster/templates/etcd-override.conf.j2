@@ -1,0 +1,12 @@
+[Service]
+ExecStart=
+ExecStart=/usr/bin/etcd \
+  --name={{ inventory_hostname }} \
+  --data-dir=/var/lib/etcd/default \
+  --listen-peer-urls=http://{{ ansible_host }}:2380 \
+  --listen-client-urls=http://127.0.0.1:2379,http://{{ ansible_host }}:2379 \
+  --initial-advertise-peer-urls=http://{{ ansible_host }}:2380 \
+  --initial-cluster=node1=http://{{ node_ip1 }}:2380,node2=http://{{ node_ip2 }}:2380,node3=http://{{ node_ip3 }}:2380 \
+  --advertise-client-urls=http://{{ ansible_host }}:2379 \
+  --initial-cluster-token=etcd-cluster \
+  --initial-cluster-state=new

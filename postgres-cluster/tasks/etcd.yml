@@ -18,7 +18,37 @@
   when:
     - ansible_distribution == 'Ubuntu'
     - ansible_distribution_major_version == '22'
-    
+- name: Remove old etcd data
+  file:
+    path: /var/lib/etcd/default
+    state: absent
+
+- name: Create etcd data directory
+  file:
+    path: /var/lib/etcd/default
+    state: directory
+    owner: etcd
+    group: etcd
+    mode: "0755"
+
+- name: Create systemd override directory for etcd
+  ansible.builtin.file:
+    path: /etc/systemd/system/etcd.service.d
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Configure etcd systemd override
+  ansible.builtin.template:
+    src: etcd-override.conf.j2
+    dest: /etc/systemd/system/etcd.service.d/override.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify:
+    - Restart etcd
+
 - name: Set etcd configuration for node1
   template:
     src: etcd.j2
@@ -49,10 +79,14 @@
   delegate_to: node3
   notify: Restart etcd
 
-- name: Remove all files in /var/lib/etcd
-  shell: |
-     rm -rf /var/lib/etcd/*
-  become: true
-  become_user: root
-  notify: Restart etcd
+- name: Enable etcd
+  systemd:
+    name: etcd
+    enabled: true
+    daemon_reload: true
+    
+- name: Restart etcd
+  systemd:
+    name: etcd
+    state: restarted
 ...

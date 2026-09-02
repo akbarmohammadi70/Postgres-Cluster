@@ -1,14 +1,25 @@
 ---
 - name: Install requirments
   include_tasks: requirments.yml
-  when: ansible_os_family == "Debian"
+  when:
+  - ansible_distribution == 'Ubuntu'
+  - ansible_distribution_major_version == '22'
+
 - name: Install postgres 
   include_tasks: postgresql.yml
-  when: ansible_os_family == "Debian"
+  when:
+  - ansible_distribution == 'Ubuntu'
+  - ansible_distribution_major_version == '22'
+
 - name: Install etcd 
   include_tasks: etcd.yml
-  when: ansible_os_family == "Debian"
+  when:
+  - ansible_distribution == 'Ubuntu'
+  - ansible_distribution_major_version == '22'
+
 - name: Install patroni
   include_tasks: patroni.yml
-  when: ansible_os_family == "Debian"
+  when:
+  - ansible_distribution == 'Ubuntu'
+  - ansible_distribution_major_version == '22'
 ...

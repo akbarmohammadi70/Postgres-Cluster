@@ -78,6 +78,12 @@ bootstrap:
       options:
         - createrole
         - createdb
+        - superuser
+
+    {{ replicator_user }}:
+      password: "{{ replicator_password }}"
+      options:
+        - replication
 
 postgresql:
   # Specifies the IP address and port on which PostgreSQL should listen for connections.	

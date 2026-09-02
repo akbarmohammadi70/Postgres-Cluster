@@ -1,11 +1,19 @@
 ---
 - name: Install requirments
   include_tasks: requirments.yml
-  when: ansible_os_family == "Debian"
+  when:
+  - ansible_distribution == 'Ubuntu'
+  - ansible_distribution_major_version == '22'
+
 - name: Install HAproxy
   include_tasks: haproxy.yml
-  when: ansible_os_family == "Debian"
+  when:
+  - ansible_distribution == 'Ubuntu'
+  - ansible_distribution_major_version == '22'
+
 - name: Install keepalived
   include_tasks: keepalived.yml
-  when: ansible_os_family == "Debian"
+  when:
+  - ansible_distribution == 'Ubuntu'
+  - ansible_distribution_major_version == '22'
 ...
